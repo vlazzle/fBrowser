@@ -56,3 +56,18 @@ a {
   border: 1px solid #ccc;
   margin: 5px 0 0 0;
 }
+
+#pager {
+  position: absolute;
+  top: 0;
+  left: 350px;
+  font-size: 8pt;
+}
+
+#pager a {
+  padding: 0 1px;
+}
+
+#pager .currentp {
+  text-decoration: underline;
+}

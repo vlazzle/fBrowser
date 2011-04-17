@@ -3,7 +3,7 @@ var fBrowsr = (function () {
   
   var Photo = Backbone.Model.extend({
     flickrUrl: function (size) {
-      size = typeof size === 'undefined' ? 's' : size;
+      size = _.isUndefined(size) ? 's' : size;
       
       return (
         'http://farm' + this.get('farm') +
@@ -40,7 +40,8 @@ var fBrowsr = (function () {
           api_key: model.api_key,
           text: model.searchText,
           format: 'json',
-          method: 'flickr.photos.search'
+          method: 'flickr.photos.search',
+          page: _.isUndefined(model.page) ? 1 : model.page
         },
         function (data) {
           console.debug(typeof data);
@@ -73,6 +74,14 @@ var fBrowsr = (function () {
     
     currentPage: function () {
       return this.page;
+    },
+    
+    loadPage: function (newPage) {
+      console.debug('loading page ' + newPage);
+      
+      this.page = newPage;
+      
+      this.fetch();
     }
   });
   
@@ -106,7 +115,7 @@ var fBrowsr = (function () {
 
         for (var j = 0; j < this.numCols; j++) {
           var photo = this.collection.at(i * this.numCols + j);
-          if (typeof photo !== 'undefined') {
+          if (!_.isUndefined(photo)) {
              tds.push(this.tdTemplate({
                large: photo.flickrUrl('b'),
                small: photo.flickrUrl('s'),
@@ -132,8 +141,53 @@ var fBrowsr = (function () {
   
   var Pager = Backbone.View.extend({
     initialize: function () {
-      this.numPages = this.collection
+      var that = this;
+      
       _.bindAll(this, 'render');
+      
+      this.collection.bind('refresh', this.render);
+      
+      $('#' + this.id + ' a').live('click', function () {
+        var newPage = $(this).attr('data-pnum');
+        that.collection.loadPage(newPage);
+        return false;
+      });
+    },
+    
+    pageLink: _.template('<a href="#p<%= pnum %>" data-pnum="<%= pnum %>" title="go to page <%= pnum %>"><%= text %></a>'),
+    
+    render: function () {
+      var that = this,
+          currentPage = this.collection.currentPage(),
+          totalPages = this.collection.numPages(),
+          numPagesBefore = Math.min(5, currentPage - 1),
+          numPagesAfter = Math.min(totalPages, 10) - numPagesBefore,
+          pagesBefore = _.range(currentPage - numPagesBefore, currentPage),
+          pagesAfter = _.range(currentPage + 1, currentPage + numPagesAfter + 1),
+          pages = pagesBefore.concat([currentPage], pagesAfter);
+      
+      console.debug('numPagesBefore: ' + numPagesBefore);
+      console.debug('numPagesAfter: ' + numPagesAfter);
+      
+      var beforeLinks = _.map(pagesBefore, function (page) {
+        return that.pageLink({
+          pnum: page,
+          text: page
+        });
+      });
+      
+      var afterLinks = _.map(pagesAfter, function (page) {
+        return that.pageLink({
+          pnum: page,
+          text: page
+        });
+      });
+      
+      var pager = beforeLinks.concat(['<span class="currentp">' + currentPage + '</span>'], afterLinks);
+      
+      $('#' + this.id).html(pager.join(' '));
+      
+      return this;
     }
   });
   
