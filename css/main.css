@@ -1,0 +1,58 @@
+body {
+  font: 10pt verdana, helvetica, arial, sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+a {
+  text-decoration: none;
+}
+
+#wrapper {
+  width: 920px;
+  margin: 0 auto;
+  position: relative;
+}
+
+#topbar {
+  position: static;
+  top: 0;
+  left: 0;
+  width: 920px;
+}
+
+#photos {
+  margin: 0 auto;
+}
+
+#photos td {
+  margin: 0;
+  padding: 0;
+  font-size: 8pt;
+}
+
+#photos td a {
+  display: block;
+  width: 75px;
+  height: 75px;
+  margin: 0;
+  padding: 3px;
+}
+
+#photos td a:hover {
+  background: #ccc;
+}
+
+#loading {                                                                                                    
+  width: 32px;
+  height: 32px;
+  display: none;
+  position: absolute;
+  background: url(../images/lightbox-ico-loading.gif);
+}
+
+#q {
+  font-size: 18px;
+  border: 1px solid #ccc;
+  margin: 5px 0 0 0;
+}

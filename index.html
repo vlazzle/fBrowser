@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<title>fe-test</title>
+<link rel="stylesheet" type="text/css" href="css/main.css" />
+<link rel="stylesheet" type="text/css" href="css/jquery.lightbox-0.5.css"></link>
+
+<script type="text/javascript" src="js/jquery-1.5.2.js"></script>
+<script type="text/javascript" src="js/underscore.js"></script>
+<script type="text/javascript" src="js/backbone.js"></script>
+<script type="text/javascript" src="js/main.js"></script>
+<script type="text/javascript" src="js/jquery.lightbox-0.5.js"></script>
+<script type="text/javascript">
+$(function () {
+  var spec = {
+    api_key: '4cb641e5bce8988e4327ec4479a07287',
+    api_secret: '344adbc2fe4ff660',
+    api_endpoint: 'http://www.flickr.com/services/rest/'
+  };
+  
+  fBrowsr.init(spec);
+  
+  $('#search').submit(function () {
+    fBrowsr.init(spec);
+    return false;
+  });
+});
+</script>
+
+</head>
+<body>
+
+<div id="wrapper">
+
+<div id="topbar">
+<form action="" id="search" method="get">
+  <input type="text" name="q" value="cat" id="q" />
+</form>
+<p class="pager"></p>
+</div>
+  
+<div id="main">
+  
+<p id="loading"></p>
+  
+<table id="photos" cellspacing="0" cellpadding="0">
+<tbody id="photo-grid">
+</tbody>
+</table>
+
+</div>
+</div>
+  
+</body>
+</html>
