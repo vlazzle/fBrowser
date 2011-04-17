@@ -1,6 +1,5 @@
-fBrowsr = (function () {
-  var photoSet, photoGrid,
-      that = this;
+var fBrowsr = (function () {
+  var self = this;
   
   var Photo = Backbone.Model.extend({
     flickrUrl: function (size) {
@@ -20,35 +19,21 @@ fBrowsr = (function () {
     model: Photo,
     
     initialize: function (spec) {
-      // $.extend(this, spec);
       this.searchText = spec.searchText;
       this.api_key = spec.api_key;
       this.api_endpoint = spec.api_endpoint;
+
       console.debug('searchText: ' + this.searchText);
-      console.debug('api_key: ' + this.api_key);
-    },
-    
-    parse: function (response) {
-      console.debug('parsing');
-      if ('ok' !== response.stat) {
-        throw response.stat + ' (code ' + response.code + '): ' + response.message;
-      }
       
-      // do something with response.photos
-      console.debug(response);
+      this.bind('refresh', function () {
+        this.trigger('loading:stop');
+      });
+    },
+    
+    // method parameter is assumed to be "read" and ignored
+    sync: function (method, model) {
+      model.trigger('loading:start');
       
-      return response.photos.photo;
-    },
-    
-    fetch: function () {
-      console.debug('fetching');
-      var argsArray = Array.prototype.slice.call(arguments, 0);
-      this.trigger('loading:start');
-      return Backbone.Collection.prototype.fetch.call(this, argsArray);
-    },
-    
-    sync: function (method, model, success, error) {      
-      console.debug('syncing');
       $.getJSON(
         model.api_endpoint + '?jsoncallback=?',
         {
@@ -63,6 +48,31 @@ fBrowsr = (function () {
           model.refresh(model.parse(data));
         }
       );
+    },
+    
+    parse: function (response) {
+      console.debug('parsing');
+      if ('ok' !== response.stat) {
+        throw response.stat + ' (code ' + response.code + '): ' + response.message;
+      }
+      
+      // do something with response.photos
+      console.debug(response);
+      
+      this.pages = response.photos.pages;
+      this.page = response.photos.page;
+      this.perpage = response.photos.perpage;
+      this.total = parseInt(response.photos.total);
+      
+      return response.photos.photo;
+    },
+    
+    numPages: function () {
+      return this.pages;
+    },
+    
+    currentPage: function () {
+      return this.page;
     }
   });
   
@@ -71,15 +81,24 @@ fBrowsr = (function () {
       this.numCols = parseInt(spec.numCols) || 10;
       
       _.bindAll(this, 'render');
+
+      this.collection.bind('refresh', this.render);
+      
+      this.collection.bind('loading:start', function () {
+        $('#loading').fadeIn();
+      });
+      
+      this.collection.bind('loading:stop', function () {
+        $('#loading').fadeOut();
+      });
     },
     
+    tdTemplate: _.template('<td><a href="<%= large %>" title="<%= title %>"><img src="<%= small %>" alt="<%= title %>" /></a></td>'),
+    
     render: function () {
-      $('#loading').fadeOut();
-      
       $('#' + this.id).html('');
       
-      var tdTemplate = _.template('<td><a href="<%= large %>" title="<%= title %>"><img src="<%= small %>" alt="<%= title %>" /></a></td>'),
-          trs = [];
+      var trs = [];
       
       for (var i = 0; i < this.collection.length / this.numCols; i++) {
         var tr = '<tr>',
@@ -88,7 +107,7 @@ fBrowsr = (function () {
         for (var j = 0; j < this.numCols; j++) {
           var photo = this.collection.at(i * this.numCols + j);
           if (typeof photo !== 'undefined') {
-             tds.push(tdTemplate({
+             tds.push(this.tdTemplate({
                large: photo.flickrUrl('b'),
                small: photo.flickrUrl('s'),
                title: photo.escape('title'),
@@ -111,7 +130,16 @@ fBrowsr = (function () {
     }
   });
   
-  $.extend(that, {
+  var Pager = Backbone.View.extend({
+    initialize: function () {
+      this.numPages = this.collection
+      _.bindAll(this, 'render');
+    }
+  });
+  
+  var photoSet, photoGrid, pager;
+  
+  $.extend(self, {
     init: function (spec) {
       spec.searchText = $('#q').val();
       photoSet = new PhotoSet(spec);
@@ -122,13 +150,10 @@ fBrowsr = (function () {
         id: 'photo-grid',
       });
       
-      photoSet.bind('refresh', function (collection, options) {
-        console.debug('refresh');
-        photoGrid.render();
-      });
-      
-      photoSet.bind('loading:start', function (collection, options) {
-        $('#loading').fadeIn();
+      pager = new Pager({
+        collection: photoSet,
+        tagName: 'p',
+        id: 'pager'
       });
       
       console.debug('calling fetch');
@@ -136,5 +161,5 @@ fBrowsr = (function () {
     },
   });
   
-  return that;
+  return self;
 })();
