@@ -1,0 +1,23 @@
+I've noticed some strange behavior in the higher pages numbers of a flickr.photos.search query.
+For example, flickr.photos.search won't allow paging past page 10,000.
+
+GET request:
+  http://www.flickr.com/services/rest/?api_key=4cb641e5bce8988e4327ec4479a07287&text=cat&format=json&method=flickr.photos.search&page=74560
+  or
+  http://www.flickr.com/services/rest/?api_key=4cb641e5bce8988e4327ec4479a07287&text=cat&format=json&method=flickr.photos.search&page=10001
+  or anything with page > 10000
+
+formatted response:
+  jsonFlickrApi({
+      "photos": {
+          "page": 10000,
+          "pages": 74560,
+          "perpage": 100,
+          "total": "7455960",
+          "photo": [ ... ]
+      },
+      "stat": "ok"
+  })
+
+
+

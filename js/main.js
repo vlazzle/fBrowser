@@ -57,9 +57,6 @@ var fBrowsr = (function () {
         throw response.stat + ' (code ' + response.code + '): ' + response.message;
       }
       
-      // do something with response.photos
-      console.debug(response);
-      
       this.pages = response.photos.pages;
       this.page = response.photos.page;
       this.perpage = response.photos.perpage;
@@ -157,11 +154,13 @@ var fBrowsr = (function () {
     pageLink: _.template('<a href="#p<%= pnum %>" data-pnum="<%= pnum %>" title="go to page <%= pnum %>"><%= text %></a>'),
     
     render: function () {
+      console.debug('rendering pager');
+      
       var that = this,
           currentPage = this.collection.currentPage(),
           totalPages = this.collection.numPages(),
           numPagesBefore = Math.min(5, currentPage - 1),
-          numPagesAfter = Math.min(totalPages, 10) - numPagesBefore,
+          numPagesAfter = Math.min(totalPages, 10) - numPagesBefore - 1,
           pagesBefore = _.range(currentPage - numPagesBefore, currentPage),
           pagesAfter = _.range(currentPage + 1, currentPage + numPagesAfter + 1),
           pages = pagesBefore.concat([currentPage], pagesAfter);
@@ -183,7 +182,22 @@ var fBrowsr = (function () {
         });
       });
       
-      var pager = beforeLinks.concat(['<span class="currentp">' + currentPage + '</span>'], afterLinks);
+      // links to first and last page
+      var first = [], last = [];
+      if (1 != currentPage) {
+        first.push(that.pageLink({
+          pnum: 1,
+          text: 'first'
+        }));
+      }
+      if (totalPages != currentPage) {
+        last.push(that.pageLink({
+          pnum: totalPages,
+          text: 'last'
+        }));
+      }
+      
+      var pager = first.concat(beforeLinks, ['<span class="currentp">' + currentPage + '</span>'], afterLinks, last);
       
       $('#' + this.id).html(pager.join(' '));
       
