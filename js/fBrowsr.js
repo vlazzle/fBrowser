@@ -89,6 +89,10 @@ var fBrowsr = (function () {
     
     cachedResponse: function () {
       return this.responsesByPage[this.page];
+    },
+    
+    totalPhotos: function () {
+      return this.total;
     }
   });
   
@@ -136,6 +140,10 @@ var fBrowsr = (function () {
         trs.push(tr);
       }
       
+      if (0 === this.collection.length) {
+        trs.push('<tr><td>No photos here.</td></tr>')
+      }
+      
       $('#' + this.id).append(trs.join(""));
       
       // photo grid image links should open in lightbox
@@ -164,6 +172,7 @@ var fBrowsr = (function () {
     
     render: function () {
       var that = this,
+          totalPhotos = this.collection.totalPhotos(),
           currentPage = this.collection.currentPage(),
           totalPages = this.collection.numPages(),
           numPagesBefore = Math.min(5, currentPage - 1),
@@ -187,20 +196,26 @@ var fBrowsr = (function () {
       
       // links to first and last page
       var first = [], last = [];
-      if (1 != currentPage) {
+      if (1 !== currentPage) {
         first.push(that.pageLink({
           pnum: 1,
           text: 'first'
         }));
       }
-      if (totalPages != currentPage) {
+      if (totalPages !== currentPage && 0 !== totalPhotos) {
         last.push(that.pageLink({
           pnum: totalPages,
           text: 'last'
         }));
       }
       
-      var pager = first.concat(beforeLinks, ['<span class="currentp">' + currentPage + '</span>'], afterLinks, last);
+      // only show pager if there's more than one page
+      var currentPageNum = [];
+      if (0 !== totalPhotos && 1 !== totalPages) {
+        currentPageNum.push('<span class="currentp">' + currentPage + '</span>');
+      }
+      
+      var pager = first.concat(beforeLinks, currentPageNum, afterLinks, last);
       
       $('#' + this.id).html(pager.join(' '));
       
