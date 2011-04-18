@@ -151,6 +151,7 @@
 				_finish();
 				return false;
 			});
+			
 			// If window was resized, calculate the new overlay dimensions
 			$(window).resize(function() {
 				// Get page sizes
@@ -174,7 +175,9 @@
 		 *
 		 */
 		function _set_image_to_view() { // show the loading
-			// Show the loading
+      $('#add-fav').remove();
+		  
+      // Show the loading
 			$('#lightbox-loading').show();
 			if ( settings.fixedNavigation ) {
 				$('#lightbox-image,#lightbox-container-image-data-box,#lightbox-image-details-currentNumber').hide();
@@ -190,6 +193,8 @@
 				_resize_container_image_box(objImagePreloader.width,objImagePreloader.height);
 				//	clear onLoad, IE behaves irratically with animated gifs otherwise
 				objImagePreloader.onload=function(){};
+				
+				$('#fav-box').trigger('showFavLink');
 			};
 			objImagePreloader.src = settings.imageArray[settings.activeImage][0];
 		};
@@ -200,7 +205,7 @@
 		 * @param integer intImageHeight The image´s height that will be showed
 		 */
 		function _resize_container_image_box(intImageWidth,intImageHeight) {
-			// Get current width and height
+		  // Get current width and height
 			var intCurrentWidth = $('#lightbox-container-image-box').width();
 			var intCurrentHeight = $('#lightbox-container-image-box').height();
 			// Get the width and height of the selected image plus the padding
@@ -238,7 +243,9 @@
 		 *
 		 */
 		function _show_image_data() {
-			$('#lightbox-container-image-data-box').slideDown('fast');
+			$('#lightbox-container-image-data-box').slideDown('fast', function () {
+        $('#add-fav').show();
+			});
 			$('#lightbox-image-details-caption').hide();
 			if ( settings.imageArray[settings.activeImage][1] ) {
 				$('#lightbox-image-details-caption').html(settings.imageArray[settings.activeImage][1]).show();
@@ -246,7 +253,7 @@
 			// If we have a image set, display 'Image X of X'
 			if ( settings.imageArray.length > 1 ) {
 				$('#lightbox-image-details-currentNumber').html(settings.txtImage + ' ' + ( settings.activeImage + 1 ) + ' ' + settings.txtOf + ' ' + settings.imageArray.length).show();
-			}		
+			}
 		}
 		/**
 		 * Display the button navigations
@@ -306,7 +313,8 @@
 				}
 			}
 			// Enable keyboard navigation
-			_enable_keyboard_navigation();
+			// buggy in chrome
+      // _enable_keyboard_navigation();
 		}
 		/**
 		 * Enable a support to keyboard navigation

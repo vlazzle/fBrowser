@@ -22,7 +22,7 @@ a {
 }
 
 #photos {
-  margin: 0 auto;
+  margin: 0 auto 20px auto;
 }
 
 #photos td {
@@ -51,7 +51,7 @@ a {
   background: url(../images/lightbox-ico-loading.gif);
 }
 
-#q {
+#search-query {
   font-size: 18px;
   border: 1px solid #ccc;
   margin: 5px 0 0 0;
@@ -74,4 +74,36 @@ a {
 
 #pager .currentp {
   text-decoration: underline;
+}
+
+#fav-box {
+  position: fixed;
+  top: 0;
+  right: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none inside;
+}
+
+#fav-box li {
+  margin: 0;
+  padding: 0;
+  display: block;
+}
+
+#fav-box li a {
+  display: block;
+  padding-top: 5px;
+  width: 75px;
+  height: 75px;
+}
+
+#add-fav {
+  padding-top: 17px;
+  display: none;
+}
+
+#add-fav a {
+  color: #666;
+  font-size: 10px;
 }

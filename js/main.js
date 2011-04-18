@@ -1,6 +1,8 @@
 var fBrowsr = (function () {
+  // class of elements in the PhotoSet collection
   var Photo = Backbone.Model.extend({
     flickrUrl: function (size) {
+      // default to thumbnail size
       size = _.isUndefined(size) ? 's' : size;
       
       return (
@@ -13,6 +15,7 @@ var fBrowsr = (function () {
     }
   });
   
+  // fetch -> sync -> parse -> refresh -> add
   var PhotoSet = Backbone.Collection.extend({    
     model: Photo,
     
@@ -31,6 +34,8 @@ var fBrowsr = (function () {
     // method parameter is assumed to be "read" and ignored
     sync: function (method, model, success) {
       var cachedResponse = model.cachedResponse();
+      
+      // only send out jsonp request if there is no response cached for the current page
       if (_.isUndefined(cachedResponse)) {
         model.trigger('loading:start');
 
@@ -53,6 +58,7 @@ var fBrowsr = (function () {
     
     parse: function (response) {
       if ('ok' !== response.stat) {
+        // fail hard and fast
         throw response.stat + ' (code ' + response.code + '): ' + response.message;
       }
       
@@ -61,10 +67,10 @@ var fBrowsr = (function () {
       this.perpage = response.photos.perpage;
       this.total = parseInt(response.photos.total);
       
-      // cache response for this page
+      // cache response for current page
       this.responsesByPage[this.page] = response;
-      console.debug('caching response for page ' + this.page);
       
+      // return value will be the argument to refresh
       return response.photos.photo;
     },
     
@@ -77,13 +83,11 @@ var fBrowsr = (function () {
     },
     
     loadPage: function (newPage) {
-      console.debug('loading page ' + newPage); 
       this.page = newPage;
       this.fetch();
     },
     
     cachedResponse: function () {
-      console.debug('checking cached response for ' + this.searchText + ' ' + this.page);
       return this.responsesByPage[this.page];
     }
   });
@@ -133,7 +137,8 @@ var fBrowsr = (function () {
       }
       
       $('#' + this.id).append(trs.join(""));
-            
+      
+      // photo grid image links should open in lightbox
       $('#' + this.id + ' td a').lightBox();
       
       return this;
@@ -158,8 +163,6 @@ var fBrowsr = (function () {
     pageLink: _.template('<a href="#p<%= pnum %>" data-pnum="<%= pnum %>" title="go to page <%= pnum %>"><%= text %></a>'),
     
     render: function () {
-      console.debug('rendering pager');
-      
       var that = this,
           currentPage = this.collection.currentPage(),
           totalPages = this.collection.numPages(),
@@ -169,16 +172,12 @@ var fBrowsr = (function () {
           pagesAfter = _.range(currentPage + 1, currentPage + numPagesAfter + 1),
           pages = pagesBefore.concat([currentPage], pagesAfter);
       
-      console.debug('numPagesBefore: ' + numPagesBefore);
-      console.debug('numPagesAfter: ' + numPagesAfter);
-      
       var beforeLinks = _.map(pagesBefore, function (page) {
         return that.pageLink({
           pnum: page,
           text: page
         });
       });
-      
       var afterLinks = _.map(pagesAfter, function (page) {
         return that.pageLink({
           pnum: page,
@@ -209,19 +208,65 @@ var fBrowsr = (function () {
     }
   });
   
+  var FavBox = Backbone.View.extend({
+    favItem: _.template('<li style="display:none"><a href="<%= aHref %>" title="<%= caption %>"><img src="<%= imgSrc %>" alt="<%= caption %>" /></a></li>'),
+    
+    initialize: function () {
+      this.render();
+    },
+    
+    render: function () {
+      var that = this;
+      
+      $('#' + this.id).unbind();
+      
+      // favorite photos should open in lightbox
+      $('#' + this.id + ' a').lightBox();
+      
+      $('#' + this.id).bind('showFavLink', function () {
+        var caption = $('#lightbox-image-details-caption').text(),
+            aHref = $('#lightbox-image').attr('src'),
+            imgSrc = aHref.replace(/\_\w.jpg$/, '_s.jpg');
+        
+        // don't show link to add to favorites if photo already in favorites
+        if (0 === $('#' + that.id + ' a[href="' + aHref + '"]').length) {
+          $('#lightbox-container-image').append('<p id="add-fav"><a href="#">Add to favorites &hearts;</a></p>');
+        }
+
+        $('#add-fav a').click(function () {
+          $('#' + that.id).append(that.favItem({
+            aHref: aHref,
+            caption: caption,
+            imgSrc: imgSrc
+          }));
+          $('#' + that.id + ' a:last').lightBox();
+          
+          var $addLink = $(this);
+          var $newFav = $('#' + that.id + ' li:last');
+          $newFav.slideDown('slow', function () {
+            $addLink.fadeOut();
+          });
+          
+          return false;
+        });
+      });
+    }
+  });
+  
   var self = this;
   
   return {
     init: function (spec) {
       // clear out previous event bindings in case this isn't the first call to init
-      var propertiesWithBindings = _(['photoSet', 'photoGrid', 'pager']);
+      var propertiesWithBindings = _(['photoSet', 'photoGrid', 'pager', 'favBox']);
       propertiesWithBindings.each(function (prop) {
         !_.isUndefined(self[prop]) && typeof self[prop].unbind === 'function' && self[prop].unbind();
       });
-  
-      spec.searchText = $('#q').val();
+      
+      // pass search query to new PhotoSet
+      spec.searchText = $('#search-query').val();
       self.photoSet = new PhotoSet(spec);
-  
+      
       self.photoGrid = new PhotoGrid({
         collection: photoSet,
         tagName: 'tbody',
@@ -233,7 +278,13 @@ var fBrowsr = (function () {
         tagName: 'p',
         id: 'pager'
       });
-  
+      
+      self.favBox = new FavBox({
+        tagName: 'ul',
+        id: 'fav-box'
+      });
+      
+      // load photos
       self.photoSet.fetch();
     }
   };
