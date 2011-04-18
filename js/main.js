@@ -1,6 +1,4 @@
 var fBrowsr = (function () {
-  var self = this;
-  
   var Photo = Backbone.Model.extend({
     flickrUrl: function (size) {
       size = _.isUndefined(size) ? 's' : size;
@@ -22,37 +20,38 @@ var fBrowsr = (function () {
       this.searchText = spec.searchText;
       this.api_key = spec.api_key;
       this.api_endpoint = spec.api_endpoint;
-
-      console.debug('searchText: ' + this.searchText);
       
       this.bind('refresh', function () {
         this.trigger('loading:stop');
       });
+      
+      this.responsesByPage = {};
     },
     
     // method parameter is assumed to be "read" and ignored
-    sync: function (method, model) {
-      model.trigger('loading:start');
-      
-      $.getJSON(
-        model.api_endpoint + '?jsoncallback=?',
-        {
-          api_key: model.api_key,
-          text: model.searchText,
-          format: 'json',
-          method: 'flickr.photos.search',
-          page: _.isUndefined(model.page) ? 1 : model.page
-        },
-        function (data) {
-          console.debug(typeof data);
-          console.debug(data);
-          model.refresh(model.parse(data));
-        }
-      );
+    sync: function (method, model, success) {
+      var cachedResponse = model.cachedResponse();
+      if (_.isUndefined(cachedResponse)) {
+        model.trigger('loading:start');
+
+        $.getJSON(
+          model.api_endpoint + '?jsoncallback=?',
+          {
+            api_key: model.api_key,
+            text: model.searchText,
+            format: 'json',
+            method: 'flickr.photos.search',
+            page: _.isUndefined(model.page) ? 1 : model.page
+          },
+          success
+        );
+      }
+      else {
+        success(cachedResponse);
+      }
     },
     
     parse: function (response) {
-      console.debug('parsing');
       if ('ok' !== response.stat) {
         throw response.stat + ' (code ' + response.code + '): ' + response.message;
       }
@@ -61,6 +60,10 @@ var fBrowsr = (function () {
       this.page = response.photos.page;
       this.perpage = response.photos.perpage;
       this.total = parseInt(response.photos.total);
+      
+      // cache response for this page
+      this.responsesByPage[this.page] = response;
+      console.debug('caching response for page ' + this.page);
       
       return response.photos.photo;
     },
@@ -74,11 +77,14 @@ var fBrowsr = (function () {
     },
     
     loadPage: function (newPage) {
-      console.debug('loading page ' + newPage);
-      
+      console.debug('loading page ' + newPage); 
       this.page = newPage;
-      
       this.fetch();
+    },
+    
+    cachedResponse: function () {
+      console.debug('checking cached response for ' + this.searchText + ' ' + this.page);
+      return this.responsesByPage[this.page];
     }
   });
   
@@ -125,8 +131,6 @@ var fBrowsr = (function () {
         tr += '</tr>';
         trs.push(tr);
       }
-      
-      console.debug('got ' + this.collection.length);
       
       $('#' + this.id).append(trs.join(""));
             
@@ -205,29 +209,32 @@ var fBrowsr = (function () {
     }
   });
   
-  var photoSet, photoGrid, pager;
+  var self = this;
   
-  $.extend(self, {
+  return {
     init: function (spec) {
+      // clear out previous event bindings in case this isn't the first call to init
+      var propertiesWithBindings = _(['photoSet', 'photoGrid', 'pager']);
+      propertiesWithBindings.each(function (prop) {
+        !_.isUndefined(self[prop]) && typeof self[prop].unbind === 'function' && self[prop].unbind();
+      });
+  
       spec.searchText = $('#q').val();
-      photoSet = new PhotoSet(spec);
-      
-      photoGrid = new PhotoGrid({
+      self.photoSet = new PhotoSet(spec);
+  
+      self.photoGrid = new PhotoGrid({
         collection: photoSet,
         tagName: 'tbody',
         id: 'photo-grid',
       });
-      
-      pager = new Pager({
+  
+      self.pager = new Pager({
         collection: photoSet,
         tagName: 'p',
         id: 'pager'
       });
-      
-      console.debug('calling fetch');
-      photoSet.fetch();
-    },
-  });
   
-  return self;
+      self.photoSet.fetch();
+    }
+  };
 })();
